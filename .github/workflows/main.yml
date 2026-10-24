@@ -1,0 +1,121 @@
+name: Main Data Pipeline
+
+# checkov:skip=CKV_GHA_7: process_date input is required for controlled ingestion backfills
+
+on:
+  push:
+    branches:
+      - main
+
+  workflow_dispatch:
+    inputs:
+      process_date:
+        description: "Processing date (YYYY-MM-DD)"
+        required: false
+
+env:
+  AWS_REGION: us-east-1
+  PYTHON_VERSION: "3.12"
+
+permissions:
+  id-token: write
+  contents: read
+
+concurrency:
+  group: main-pipeline-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  ingestion-and-trigger:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: arn:aws:iam::535942231592:role/GitHub_Actions_Personal
+          role-session-name: GitHubActionsOIDCSession
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Validate AWS identity
+        run: |
+          set -euo pipefail
+          aws sts get-caller-identity
+
+      - name: Validate process_date input
+        if: ${{ github.event.inputs.process_date != '' }}
+        run: |
+          set -euo pipefail
+
+          PROCESS_DATE="${{ github.event.inputs.process_date }}"
+
+          if [[ ! "$PROCESS_DATE" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]]; then
+            echo "Invalid process_date format. Expected YYYY-MM-DD"
+            exit 1
+          fi
+
+          echo "Validated process_date: $PROCESS_DATE"
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+
+      - name: Install Poetry
+        run: |
+          set -euo pipefail
+
+          python -m pip install --upgrade pip
+          pip install poetry
+
+      - name: Configure Poetry
+        run: |
+          set -euo pipefail
+
+          poetry config virtualenvs.in-project true
+
+      - name: Cache Poetry virtualenv
+        uses: actions/cache@v4
+        with:
+          path: |
+            .venv
+            ~/.cache/pypoetry
+          key: poetry-${{ runner.os }}-${{ hashFiles('poetry.lock') }}
+
+      - name: Install dependencies
+        run: |
+          set -euo pipefail
+
+          poetry install --no-interaction --no-root
+
+      - name: Generate CSV
+        env:
+          BRASIL_IO_TOKEN: ${{ secrets.BRASIL_IO_TOKEN }}
+          PROCESS_DATE: ${{ github.event.inputs.process_date }}
+        run: |
+          set -euo pipefail
+
+          poetry run python3 -m arpad.pipelines.ingest_csv_to_s3
+
+      - name: Upload file to S3
+        run: |
+          set -euo pipefail
+
+          PROCESS_DATE="${{ github.event.inputs.process_date }}"
+
+          if [[ -z "$PROCESS_DATE" ]]; then
+            PROCESS_DATE=$(date +%F)
+          fi
+
+          aws s3 cp \
+            data/gastos-deputados_cota_parlamentar.csv \
+            ${{ secrets.LANDING_BUCKET_INGESTION }}/raw/$PROCESS_DATE/
