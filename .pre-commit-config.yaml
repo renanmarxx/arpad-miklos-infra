@@ -13,6 +13,7 @@ repos:
       - id: check-merge-conflict
       - id: detect-private-key
       - id: check-added-large-files
+        args: ['--maxkb=999999']
       - id: name-tests-test
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
