@@ -7,13 +7,6 @@ resource "aws_budgets_budget" "this" {
   time_period_start = "2017-07-01_00:00"
   time_unit         = "MONTHLY"
 
-  cost_filter {
-    name = "Service"
-    values = [
-      "Amazon Elastic Compute Cloud - Compute",
-    ]
-  }
-
   notification {
     comparison_operator        = "GREATER_THAN"
     threshold                  = 100

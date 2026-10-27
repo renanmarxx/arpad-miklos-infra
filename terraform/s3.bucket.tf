@@ -15,14 +15,12 @@ resource "aws_s3_bucket_lifecycle_configuration" "this" {
   bucket = aws_s3_bucket.this.id
 
   rule {
-    id = "Expire old versions"
-
+    id     = "Expire old versions"
+    status = "Enabled"
 
     filter {
       object_size_greater_than = 1
     }
-
-    status = "Enabled"
 
     transition {
       days          = 1

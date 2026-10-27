@@ -1,7 +1,7 @@
 variable "aws_region" {
   description = "The AWS region to deploy resources in"
   type        = string
-  default     = "us-east-1"
+  default     = "us-east-2"
 }
 
 variable "assume_role" {
@@ -54,18 +54,20 @@ variable "queues" {
 variable "remote_backend" {
   description = "Whether to use a remote backend for Terraform state"
   type = object({
-    bucket_name                            = string
-    dynamodb_table_name                    = string
-    dynamodb_table_billing_mode            = string
-    dynamodb_table_hash_key_attribute_name = string
-    dynamodb_table_hash_key_attribute_type = string
+    bucket_name                                   = string
+    dynamodb_table_name                           = string
+    dynamodb_table_billing_mode                   = string
+    dynamodb_table_hash_key_attribute_name        = string
+    dynamodb_table_hash_key_attribute_type        = string
+    dynamodb_table_point_in_time_recovery_enabled = string
   })
 
   default = {
-    bucket_name                            = "bucket-sentinel-01"
-    dynamodb_table_name                    = "dynamodb-sentinel-01"
-    dynamodb_table_billing_mode            = "PAY_PER_REQUEST"
-    dynamodb_table_hash_key_attribute_name = "LockID"
-    dynamodb_table_hash_key_attribute_type = "S"
+    bucket_name                                   = "renan-marx-data-engineering-projects"
+    dynamodb_table_name                           = "dynamodb-sentinel-01"
+    dynamodb_table_billing_mode                   = "PAY_PER_REQUEST"
+    dynamodb_table_hash_key_attribute_name        = "LockID"
+    dynamodb_table_hash_key_attribute_type        = "S"
+    dynamodb_table_point_in_time_recovery_enabled = "true"
   }
 }

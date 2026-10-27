@@ -24,3 +24,7 @@ provider "aws" {
     tags = var.tags
   }
 }
+
+terraform {
+  required_version = ">= 1.0"
+}
