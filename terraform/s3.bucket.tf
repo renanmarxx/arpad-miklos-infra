@@ -35,9 +35,5 @@ resource "aws_s3_bucket_lifecycle_configuration" "this" {
     noncurrent_version_expiration {
       noncurrent_days = 5
     }
-
-    expiration {
-      days = 7
-    }
   }
 }
